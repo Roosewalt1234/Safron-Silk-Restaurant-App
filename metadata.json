@@ -1,0 +1,8 @@
+{
+  "name": "Saffron & Silk - Modern Indo-Chinese Cuisine",
+  "description": "A premium dining experience featuring North and South Indian delicacies alongside bold Chinese fusion. Includes smart ordering, table reservations, and AI-powered recommendations.",
+  "requestFramePermissions": [
+    "geolocation",
+    "microphone"
+  ]
+}
