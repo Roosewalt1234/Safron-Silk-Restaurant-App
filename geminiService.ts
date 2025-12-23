@@ -1,12 +1,38 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Always use process.env.API_KEY directly in the named parameter.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let ai: GoogleGenAI | null = null;
+let warnedMissingKey = false;
+
+function getApiKey(): string | undefined {
+  const viteKey = (import.meta as any).env?.VITE_GEMINI_API_KEY as string | undefined;
+  return viteKey || process.env.API_KEY || process.env.GEMINI_API_KEY;
+}
+
+function getAiClient(): GoogleGenAI | null {
+  if (ai) return ai;
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    if (!warnedMissingKey) {
+      warnedMissingKey = true;
+      console.warn(
+        '[geminiService] Missing Gemini API key. Set `GEMINI_API_KEY` (or `VITE_GEMINI_API_KEY`) in `.env.local` and restart the dev server.',
+      );
+    }
+    return null;
+  }
+
+  ai = new GoogleGenAI({ apiKey });
+  return ai;
+}
 
 export async function getFoodRecommendations(cartItems: string[], preference: string) {
+  const client = getAiClient();
+  if (!client) return [];
+
   try {
-    const response = await ai.models.generateContent({
+    const response = await client.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `The customer has these items in their cart: ${cartItems.join(', ')}. They prefer: ${preference}. 
       Suggest 3 additional items from our menu (North Indian, South Indian, or Chinese fusion) that would pair well. 
@@ -46,6 +72,9 @@ export async function getFoodRecommendations(cartItems: string[], preference: st
  * Generates a high-definition photorealistic image of a dish.
  */
 export async function generateGourmetImage(dishName: string, description: string) {
+  const client = getAiClient();
+  if (!client) return null;
+
   try {
     const prompt = `Professional high-end food photography of the dish: "${dishName}". 
     Context: ${description}. 
@@ -55,7 +84,7 @@ export async function generateGourmetImage(dishName: string, description: string
     Authenticity: Ensure the presentation is culturally authentic to North/South Indian or Chinese tradition. 
     8k resolution, cinematic, appetizing, culinary magazine style.`;
 
-    const response = await ai.models.generateContent({
+    const response = await client.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
         parts: [{ text: prompt }],

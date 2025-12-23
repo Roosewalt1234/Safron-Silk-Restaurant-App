@@ -44,7 +44,18 @@ const VoiceAssistant = () => {
 
     try {
       setIsConnecting(true);
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey =
+        ((import.meta as any).env?.VITE_GEMINI_API_KEY as string | undefined) ||
+        process.env.API_KEY ||
+        process.env.GEMINI_API_KEY;
+
+      if (!apiKey) {
+        throw new Error(
+          'Missing Gemini API key. Set `GEMINI_API_KEY` (or `VITE_GEMINI_API_KEY`) in `.env.local` and restart the dev server.',
+        );
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
       
       const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
@@ -335,6 +346,14 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, cartCount, tog
               <span className="hidden sm:inline">{item.label}</span>
             </button>
           ))}
+
+          <a
+            href="#contact"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full transition-all text-sm font-medium text-stone-500 hover:text-stone-900 hover:bg-stone-100"
+          >
+            <Phone size={18} />
+            <span className="hidden sm:inline">Contact Us</span>
+          </a>
           
           <button 
             onClick={toggleCart}
@@ -1678,7 +1697,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="bg-stone-900 text-white py-20 mt-20">
+      <footer id="contact" className="bg-stone-900 text-white py-20 mt-20 scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-4 gap-12">
           <div className="col-span-2">
             <div className="flex items-center gap-2 mb-6">
