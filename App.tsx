@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Home, Utensils, Calendar, Star, ShoppingBag, Menu as MenuIcon, X, Plus, Minus, ChefHat, Sparkles, ArrowRight, ChevronLeft, ChevronRight, Users, Clock, CalendarDays, Mic, MicOff, Volume2, Waveform, Loader2, Search, CheckCircle2, Flame, Filter, Truck, Package, MapPin, Navigation, MessageSquareQuote, StickyNote, Info, Phone, Share2, Tag, Eye, Download, Camera, TrendingUp } from 'lucide-react';
+import { Home, Utensils, Calendar, Star, ShoppingBag, Menu as MenuIcon, X, Plus, Minus, ChefHat, Sparkles, ArrowRight, ChevronLeft, ChevronRight, Users, Clock, CalendarDays, Mic, MicOff, Volume2, Waveform, Loader2, Search, CheckCircle2, Flame, Filter, Truck, Package, MapPin, Navigation, MessageSquareQuote, StickyNote, Info, Phone, Share2, Tag, Eye, Download, Camera, TrendingUp, Bookmark } from 'lucide-react';
 import { GoogleGenAI, Modality, LiveServerMessage } from '@google/genai';
 import { MenuItem, CartItem, Table, Review, Reservation, SpiceLevel } from './types';
 import { MENU_ITEMS, INITIAL_TABLES, REVIEWS } from './constants';
@@ -53,6 +53,9 @@ const VoiceAssistant = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
+      // Prepare Menu Data for AI Training
+      const menuTrainingText = MENU_ITEMS.map(i => `${i.name} (${i.cuisine}): AED ${i.price} - ${i.description}`).join('\n');
+
       const sessionPromise = ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         config: {
@@ -61,12 +64,25 @@ const VoiceAssistant = () => {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }, // Professional American female voice
           },
           systemInstruction: `You are the FAST & ENERGETIC AI Concierge for 'Saffron & Silk', Dubai. 
-          Persona: A bright, professional, and upbeat American woman. 
-          Tempo: Speak at a FAST, brisk, and efficient pace. 
-          Tone: Natural, energetic, and helpful. Avoid being over-dramatic; be crisp and clear.
-          Accent: Clear American English.
-          Task: Help guests with the menu, recommendations, and table bookings.
-          Constraint: Keep responses extremely short, punchy, and delivered with positive, high-tempo energy. Speed is top priority.`,
+          Persona: Bright, upbeat, professional American woman.
+          
+          OPERATING HOURS:
+          - Mon-Fri: 8am - 12am (Midnight)
+          - Sat-Sun: 9am - 1am
+          - Breakfast: 8am - 11:30am
+          - Lunch: 12pm - 4pm
+          - Dinner: 4pm - Late
+          
+          THE MENU (STRICT DATA - DO NOT HALUCINATE):
+          ${menuTrainingText}
+          
+          STRICT RULES:
+          1. ONLY offer and discuss items available in the menu provided above. 
+          2. DO NOT mention or invent any dishes that are not on this list (e.g., No Pizza, No Burgers, No Pasta).
+          3. If a user asks for something not on the menu, politely decline and suggest the closest authentic Indian alternative from the menu.
+          4. Be accurate with prices in AED.
+          5. Speak at a brisk, fast pace. Keep responses punchy and under 2 sentences.
+          6. Inform guests about our DIFC branch location if asked.`,
         },
         callbacks: {
           onopen: () => {
@@ -390,7 +406,8 @@ const FoodCard: React.FC<{
   item: MenuItem; 
   onAddToCart: (i: MenuItem) => void;
   onViewGourmet: (i: MenuItem) => void;
-}> = ({ item, onAddToCart, onViewGourmet }) => {
+  isPinned?: boolean;
+}> = ({ item, onAddToCart, onViewGourmet, isPinned }) => {
   const images = useMemo(() => item.gallery || [item.image], [item]);
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -436,7 +453,13 @@ const FoodCard: React.FC<{
   };
 
   return (
-    <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-stone-100 flex flex-col h-full">
+    <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-stone-100 flex flex-col h-full relative">
+      {isPinned && (
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 px-2 py-1 bg-orange-600 text-white text-[10px] font-bold rounded-full shadow-lg border border-white/20 animate-in fade-in zoom-in">
+          <Sparkles size={10} /> AI GOURMET VIEW
+        </div>
+      )}
+      
       <div className="relative h-56 overflow-hidden">
         {/* Carousel Images */}
         {images.map((img, idx) => (
@@ -469,34 +492,25 @@ const FoodCard: React.FC<{
         )}
 
         {/* Top Overlay Actions */}
-        <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-10">
-          <div className="flex flex-col gap-1">
-            {item.tags.map(tag => (
-              <span key={tag} className="bg-stone-900/80 backdrop-blur text-white text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded w-fit">
-                {tag}
-              </span>
-            ))}
+        <div className="absolute top-4 right-4 flex flex-col gap-2 items-end z-10">
+          <div className="bg-white/90 backdrop-blur px-3 py-1 rounded-full text-sm font-bold text-stone-900 shadow-sm">
+            AED {item.price}
           </div>
-          <div className="flex gap-2">
-            <button 
-              onClick={handleShare}
-              className="p-2 rounded-full bg-white/90 backdrop-blur text-stone-600 hover:text-orange-600 transition-all shadow-sm group/share"
-              title="Share this dish"
-            >
-              <Share2 size={16} className="group-hover/share:scale-110 transition-transform" />
-            </button>
-            <div className="bg-white/90 backdrop-blur px-3 py-1 rounded-full text-sm font-bold text-stone-900 shadow-sm">
-              AED {item.price}
-            </div>
-          </div>
+          <button 
+            onClick={handleShare}
+            className="p-2 rounded-full bg-white/90 backdrop-blur text-stone-600 hover:text-orange-600 transition-all shadow-sm group/share"
+            title="Share this dish"
+          >
+            <Share2 size={16} className="group-hover/share:scale-110 transition-transform" />
+          </button>
         </div>
         
         {/* Gourmet Visualizer Badge */}
         <button 
           onClick={(e) => { e.stopPropagation(); onViewGourmet(item); }}
-          className="absolute bottom-4 right-4 px-3 py-1.5 bg-orange-600/90 backdrop-blur text-white text-[10px] font-bold rounded-full flex items-center gap-1.5 shadow-lg transform hover:scale-105 transition-all z-10"
+          className="absolute bottom-4 right-4 px-3 py-1.5 bg-stone-900/90 backdrop-blur text-white text-[10px] font-bold rounded-full flex items-center gap-1.5 shadow-lg transform hover:scale-105 transition-all z-10"
         >
-          <Camera size={12} /> HD AI View
+          <Camera size={12} /> {isPinned ? 'Regenerate' : 'HD AI View'}
         </button>
         
         {/* Gallery Indicators */}
@@ -541,6 +555,15 @@ const FoodCard: React.FC<{
 
         <h3 className="font-serif text-xl font-bold mb-2 group-hover:text-orange-600 transition-colors">{item.name}</h3>
         <p className="text-stone-500 text-sm mb-6 line-clamp-2 leading-relaxed flex-1">{item.description}</p>
+        
+        <div className="flex flex-wrap gap-1 mb-4">
+           {item.tags.map(tag => (
+              <span key={tag} className="bg-stone-50 text-stone-400 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border border-stone-100">
+                {tag}
+              </span>
+            ))}
+        </div>
+
         <button 
           onClick={() => onAddToCart(item)}
           className="w-full py-3 bg-stone-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors mt-auto"
@@ -557,18 +580,22 @@ const FoodCard: React.FC<{
 interface GourmetModalProps {
   item: MenuItem | null;
   onClose: () => void;
+  onPin: (id: string, image: string) => void;
+  isCurrentPinned: boolean;
 }
 
-const GourmetModal: React.FC<GourmetModalProps> = ({ item, onClose }) => {
+const GourmetModal: React.FC<GourmetModalProps> = ({ item, onClose, onPin, isCurrentPinned }) => {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("Chef is preparing the visual studio...");
+  const [justPinned, setJustPinned] = useState(false);
 
   useEffect(() => {
     if (item) {
       handleGenerate();
     } else {
       setGeneratedImage(null);
+      setJustPinned(false);
     }
   }, [item]);
 
@@ -576,6 +603,7 @@ const GourmetModal: React.FC<GourmetModalProps> = ({ item, onClose }) => {
     if (!item) return;
     setLoading(true);
     setGeneratedImage(null);
+    setJustPinned(false);
     
     const messages = [
       "Plating with artisanal precision...",
@@ -596,6 +624,13 @@ const GourmetModal: React.FC<GourmetModalProps> = ({ item, onClose }) => {
     
     setGeneratedImage(result);
     setLoading(false);
+  };
+
+  const handlePin = () => {
+    if (item && generatedImage) {
+      onPin(item.id, generatedImage);
+      setJustPinned(true);
+    }
   };
 
   if (!item) return null;
@@ -635,21 +670,34 @@ const GourmetModal: React.FC<GourmetModalProps> = ({ item, onClose }) => {
                 {item.description}
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button 
                 onClick={onClose}
-                className="px-8 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-full font-bold border border-white/20 transition-all"
+                className="px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-full font-bold border border-white/20 transition-all text-sm"
               >
                 Close Studio
               </button>
+              
               {generatedImage && (
-                <a 
-                  href={generatedImage} 
-                  download={`${item.name.replace(/\s+/g, '_')}_Masterpiece.png`}
-                  className="px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-full font-bold flex items-center gap-2 transition-all shadow-lg"
-                >
-                  <Download size={18} /> Save Artwork
-                </a>
+                <>
+                  <button 
+                    onClick={handlePin}
+                    disabled={justPinned}
+                    className={`px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-lg text-sm ${
+                      justPinned ? 'bg-emerald-600 text-white cursor-default' : 'bg-white text-stone-900 hover:bg-stone-100'
+                    }`}
+                  >
+                    {justPinned ? <CheckCircle2 size={18} /> : <Bookmark size={18} />}
+                    {justPinned ? 'Pinned to Menu!' : 'Pin to Menu Card'}
+                  </button>
+                  <a 
+                    href={generatedImage} 
+                    download={`${item.name.replace(/\s+/g, '_')}_Masterpiece.png`}
+                    className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-full font-bold flex items-center gap-2 transition-all shadow-lg text-sm"
+                  >
+                    <Download size={18} /> Save Artwork
+                  </a>
+                </>
               )}
             </div>
           </div>
@@ -1016,12 +1064,39 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [aiRecs, setAiRecs] = useState<{ name: string; reason: string }[]>([]);
   const [loadingAi, setLoadingAi] = useState(false);
+  const [pinnedImages, setPinnedImages] = useState<Record<string, string>>({});
   
   // Gourmet Modal State
   const [gourmetItem, setGourmetItem] = useState<MenuItem | null>(null);
 
+  // Persistence Logic
+  useEffect(() => {
+    const saved = localStorage.getItem('saffron_pinned_images');
+    if (saved) {
+      try {
+        setPinnedImages(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load pinned images", e);
+      }
+    }
+  }, []);
+
+  const handlePinImage = (id: string, image: string) => {
+    const newPinned = { ...pinnedImages, [id]: image };
+    setPinnedImages(newPinned);
+    localStorage.setItem('saffron_pinned_images', JSON.stringify(newPinned));
+  };
+
   const DELIVERY_FEE = 15; // AED
   const TAKEAWAY_DISCOUNT_PERCENT = 0.10; // 10%
+
+  const displayMenu = useMemo(() => {
+    return MENU_ITEMS.map(item => ({
+      ...item,
+      image: pinnedImages[item.id] || item.image,
+      gallery: pinnedImages[item.id] ? [pinnedImages[item.id], ...(item.gallery || [])] : item.gallery
+    }));
+  }, [pinnedImages]);
   
   const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
   
@@ -1085,7 +1160,7 @@ export default function App() {
   };
 
   const filteredMenu = useMemo(() => {
-    return MENU_ITEMS.filter(item => {
+    return displayMenu.filter(item => {
       const cuisineMatch = filter.cuisine === 'All' || item.cuisine === filter.cuisine;
       const mealMatch = filter.meal === 'All' || item.meal.includes(filter.meal as any);
       const spiceMatch = filter.spice === 'All' || (item.spiceLevel !== undefined && item.spiceLevel.toString() === filter.spice);
@@ -1093,7 +1168,7 @@ export default function App() {
       const nameMatch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
       return cuisineMatch && mealMatch && nameMatch && spiceMatch && tagMatch;
     });
-  }, [filter, searchQuery]);
+  }, [filter, searchQuery, displayMenu]);
 
   // Order type info text
   const getOrderTypeInfo = () => {
@@ -1135,7 +1210,12 @@ export default function App() {
       <VoiceAssistant />
       
       {/* Gourmet AI Studio Modal */}
-      <GourmetModal item={gourmetItem} onClose={() => setGourmetItem(null)} />
+      <GourmetModal 
+        item={gourmetItem} 
+        onClose={() => setGourmetItem(null)} 
+        onPin={handlePinImage}
+        isCurrentPinned={gourmetItem ? !!pinnedImages[gourmetItem.id] : false}
+      />
 
       {/* Cart Sidebar */}
       <div className={`fixed inset-0 z-[60] bg-black/60 transition-opacity ${isCartOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsCartOpen(false)}>
@@ -1265,7 +1345,7 @@ export default function App() {
                     {cart.map(item => (
                       <div key={item.id} className="flex gap-4 group">
                         <div className="relative overflow-hidden rounded-2xl">
-                          <img src={item.image} className="w-24 h-24 object-cover transition-transform group-hover:scale-105" alt={item.name} />
+                          <img src={pinnedImages[item.id] || item.image} className="w-24 h-24 object-cover transition-transform group-hover:scale-105" alt={item.name} />
                           <div className="absolute top-1 right-1">
                             <SpiceIndicator level={item.spiceLevel} />
                           </div>
@@ -1525,6 +1605,7 @@ export default function App() {
                       item={item} 
                       onAddToCart={addToCart} 
                       onViewGourmet={setGourmetItem}
+                      isPinned={!!pinnedImages[item.id]}
                     />
                   ))}
                 </div>
