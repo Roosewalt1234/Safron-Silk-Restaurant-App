@@ -322,8 +322,7 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, cartCount, tog
             { id: 'home', icon: Home, label: 'Home' },
             { id: 'menu', icon: Utensils, label: 'Menu' },
             { id: 'reserve', icon: Calendar, label: 'Reservations' },
-            { id: 'reviews', icon: Star, label: 'Reviews' },
-            { id: 'contact', icon: Phone, label: 'Contact' }
+            { id: 'reviews', icon: Star, label: 'Reviews' }
           ].map((item) => (
             <button
               key={item.id}
@@ -1630,47 +1629,6 @@ export default function App() {
         )}
 
         {activeTab === 'reserve' && <ReservationView />}
-
-        {activeTab === 'contact' && (
-          <section className="py-20 max-w-4xl mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="font-serif text-4xl md:text-5xl font-bold mb-4">Contact Us</h2>
-              <p className="text-stone-500">Visit us in the heart of Dubai's financial district</p>
-            </div>
-            
-            <div className="grid md:grid-cols-2 gap-12">
-              <div className="space-y-8">
-                <div>
-                  <h3 className="font-bold text-xl mb-4 flex items-center gap-2"><MapPin className="text-orange-600" /> Location</h3>
-                  <p className="text-stone-600">Level 42, Burj Daman<br/>Al Sa'ada St, DIFC, Dubai<br/>United Arab Emirates</p>
-                </div>
-                
-                <div>
-                  <h3 className="font-bold text-xl mb-4 flex items-center gap-2"><Phone className="text-orange-600" /> Phone</h3>
-                  <p className="text-stone-600">+971 4 123 4567</p>
-                </div>
-                
-                <div>
-                  <h3 className="font-bold text-xl mb-4 flex items-center gap-2"><Clock className="text-orange-600" /> Hours</h3>
-                  <div className="text-stone-600 space-y-1">
-                    <p>Mon - Fri: 8am - 12am</p>
-                    <p>Sat - Sun: 9am - 1am</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-stone-900 text-white p-8 rounded-3xl">
-                <h3 className="font-serif text-2xl font-bold mb-6">Get in Touch</h3>
-                <div className="space-y-4">
-                  <input className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Your Name" />
-                  <input className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Email" />
-                  <textarea className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-orange-500" rows={4} placeholder="Your message..."></textarea>
-                  <button className="w-full py-3 bg-orange-600 rounded-xl font-bold hover:bg-orange-700 transition-colors">Send Message</button>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
 
         {activeTab === 'reviews' && (
           <section className="py-20 max-w-4xl mx-auto px-4">
